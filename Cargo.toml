@@ -1,0 +1,30 @@
+[package]
+name = "git-recap"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A Git subcommand that collects commit activity into structured reports — the data layer for gitnapped."
+authors = ["MiPnamic <mipnamic@mipnamic.net>"]
+license = "MIT"
+repository = "https://github.com/Solexma/git-recap"
+readme = "README.md"
+keywords = ["git", "activity", "cli", "commits", "reporting"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+colored = "3.1"
+dirs = "6.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+toml = "0.8"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"

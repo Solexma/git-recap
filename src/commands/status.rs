@@ -4,6 +4,11 @@ use crate::error::Result;
 use crate::git;
 use crate::report::Report;
 
+/// Show the current status of this repository's activity report.
+///
+/// # Errors
+///
+/// Returns an error if not in a git repo or no report exists.
 pub fn run() -> Result<()> {
     let sha = git::initial_commit_sha()?;
     let report = Report::load(&sha)?;

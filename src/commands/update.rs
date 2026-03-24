@@ -5,6 +5,11 @@ use crate::git;
 use crate::registry;
 use crate::report::{DayStats, LastCommit, Report};
 
+/// Record the latest commit's activity into the report (post-commit hook entry point).
+///
+/// # Errors
+///
+/// Returns an error if git operations or file I/O fails.
 pub fn run() -> Result<()> {
     let sha = git::initial_commit_sha()?;
     let root = git::repo_root()?;

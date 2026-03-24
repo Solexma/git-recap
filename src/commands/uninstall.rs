@@ -2,13 +2,16 @@ use std::fs;
 
 use colored::Colorize;
 
+use super::{HOOK_MARKER_END, HOOK_MARKER_START};
 use crate::error::{Error, Result};
 use crate::git;
 use crate::registry;
 
-const HOOK_MARKER_START: &str = "# >>> git-recap >>>";
-const HOOK_MARKER_END: &str = "# <<< git-recap <<<";
-
+/// Remove the post-commit hook and deregister the repo.
+///
+/// # Errors
+///
+/// Returns an error if the hook is not installed or file operations fail.
 pub fn run() -> Result<()> {
     let sha = git::initial_commit_sha()?;
 

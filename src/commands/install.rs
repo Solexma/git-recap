@@ -4,13 +4,11 @@ use std::os::unix::fs::PermissionsExt;
 
 use colored::Colorize;
 
+use super::{HOOK_MARKER_END, HOOK_MARKER_START};
 use crate::error::{Error, Result};
 use crate::git;
 use crate::registry;
 use crate::report::Report;
-
-const HOOK_MARKER_START: &str = "# >>> git-recap >>>";
-const HOOK_MARKER_END: &str = "# <<< git-recap <<<";
 const HOOK_CONTENT: &str = "\n# Record commit activity\ngit-recap update\n";
 
 /// Install the post-commit hook, register the repo, and initialise the report.

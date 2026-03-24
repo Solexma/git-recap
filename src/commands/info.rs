@@ -5,6 +5,11 @@ use crate::error::Result;
 use crate::git;
 use crate::report::Report;
 
+/// Display project and version information.
+///
+/// # Errors
+///
+/// Returns an error if git operations fail.
 pub fn run() -> Result<()> {
     println!("{}", "git-recap".bold());
     println!("Version: {}", env!("CARGO_PKG_VERSION"));
@@ -23,7 +28,7 @@ pub fn run() -> Result<()> {
 
     if let Ok(sha) = git::initial_commit_sha() {
         println!("{}", "Current project:".cyan());
-        println!("  Root SHA: {}", sha);
+        println!("  Root SHA: {sha}");
         println!("  Report: {}", config::report_file(&sha).display());
 
         match Report::load(&sha) {

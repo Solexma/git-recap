@@ -33,10 +33,7 @@ pub fn run() -> Result<()> {
     report.activity.last_touched = chrono::Local::now().fixed_offset();
     report.save()?;
 
-    println!(
-        "{} hook installed, repo registered",
-        "Done.".green().bold()
-    );
+    println!("{} hook installed, repo registered", "Done.".green().bold());
 
     Ok(())
 }
@@ -76,8 +73,7 @@ fn install_hook() -> Result<()> {
     };
 
     // Append our hook
-    let new_content =
-        format!("{existing}\n{HOOK_MARKER_START}{HOOK_CONTENT}{HOOK_MARKER_END}\n");
+    let new_content = format!("{existing}\n{HOOK_MARKER_START}{HOOK_CONTENT}{HOOK_MARKER_END}\n");
 
     fs::write(&hook_path, &new_content).map_err(|e| Error::WriteFile {
         path: hook_path.clone(),

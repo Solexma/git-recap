@@ -48,6 +48,7 @@ pub struct DayStats {
 
 impl Report {
     /// Create a new report with no commit data (for touch/lazy init).
+    #[must_use]
     pub fn new_empty(path: PathBuf, name: String, sha: String) -> Self {
         let now: DateTime<FixedOffset> = Local::now().fixed_offset();
         Self {
@@ -61,6 +62,10 @@ impl Report {
     }
 
     /// Load a report from disk by SHA.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the report file cannot be read or parsed.
     pub fn load(sha: &str) -> Result<Self> {
         let path = config::report_file(sha);
         if !path.exists() {
@@ -74,6 +79,10 @@ impl Report {
     }
 
     /// Save the report to disk.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the report file cannot be written.
     pub fn save(&self) -> Result<()> {
         let path = config::report_file(&self.repo.sha);
         if let Some(parent) = path.parent() {
@@ -87,6 +96,10 @@ impl Report {
     }
 
     /// Load existing report or create a new empty one (lazy init).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the report file exists but cannot be read or parsed.
     pub fn load_or_init(path: PathBuf, name: String, sha: String) -> Result<Self> {
         match Self::load(&sha) {
             Ok(report) => Ok(report),

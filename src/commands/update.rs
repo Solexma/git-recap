@@ -71,11 +71,7 @@ fn parse_diff_stats() -> (u32, u32, u32) {
 
     for part in summary_line.split(',') {
         let part = part.trim();
-        if let Some(n) = part
-            .split_whitespace()
-            .next()
-            .and_then(|s| s.parse().ok())
-        {
+        if let Some(n) = part.split_whitespace().next().and_then(|s| s.parse().ok()) {
             if part.contains("file") {
                 files = n;
             } else if part.contains("insertion") {

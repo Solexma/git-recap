@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{Error, Result};
 
 /// Get the data directory path (platform-specific).
+#[must_use]
 pub fn data_dir() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("~/.local/share"))
@@ -12,6 +13,7 @@ pub fn data_dir() -> PathBuf {
 }
 
 /// Get the config directory path (platform-specific).
+#[must_use]
 pub fn config_dir() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("~/.config"))
@@ -19,16 +21,22 @@ pub fn config_dir() -> PathBuf {
 }
 
 /// Get the registry file path.
+#[must_use]
 pub fn registry_file() -> PathBuf {
     config_dir().join("registry")
 }
 
 /// Get the report file path for a given SHA.
+#[must_use]
 pub fn report_file(sha: &str) -> PathBuf {
     data_dir().join(format!("{sha}.toml"))
 }
 
 /// Ensure a directory exists.
+///
+/// # Errors
+///
+/// Returns an error if the directory cannot be created.
 pub fn ensure_dir(dir: &Path) -> Result<()> {
     if !dir.exists() {
         fs::create_dir_all(dir).map_err(|e| Error::CreateDir {
@@ -39,7 +47,11 @@ pub fn ensure_dir(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Read a key=value file into a HashMap.
+/// Read a key=value file into a `HashMap`.
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be read.
 pub fn read_kv_file(path: &Path) -> Result<HashMap<String, String>> {
     if !path.exists() {
         return Ok(HashMap::new());
@@ -63,7 +75,12 @@ pub fn read_kv_file(path: &Path) -> Result<HashMap<String, String>> {
     Ok(map)
 }
 
-/// Write a HashMap to a key=value file.
+/// Write a `HashMap` to a key=value file.
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be written.
+#[allow(clippy::implicit_hasher)]
 pub fn write_kv_file(path: &Path, map: &HashMap<String, String>) -> Result<()> {
     if let Some(parent) = path.parent() {
         ensure_dir(parent)?;

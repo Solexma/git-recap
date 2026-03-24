@@ -18,10 +18,7 @@ pub fn run() -> Result<()> {
     uninstall_hook()?;
     registry::deregister(&sha)?;
 
-    println!(
-        "{} hook removed, repo deregistered",
-        "Done.".green().bold()
-    );
+    println!("{} hook removed, repo deregistered", "Done.".green().bold());
 
     Ok(())
 }

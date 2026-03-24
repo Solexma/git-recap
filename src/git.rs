@@ -3,6 +3,35 @@ use std::process::Command;
 
 use crate::error::{Error, Result};
 
+/// Pre-resolved repository context to avoid redundant git subprocess calls.
+pub struct RepoContext {
+    pub root: PathBuf,
+    pub sha: String,
+    pub name: String,
+}
+
+impl RepoContext {
+    /// Resolve the current repository context in a single pass.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if not inside a git repository or if there are no commits.
+    pub fn resolve() -> Result<Self> {
+        if !is_in_repo() {
+            return Err(Error::NotInGitRepo);
+        }
+        let root = PathBuf::from(run(&["rev-parse", "--show-toplevel"])?);
+        let sha_output =
+            run(&["rev-list", "--max-parents=0", "HEAD"]).map_err(|_| Error::NoCommits)?;
+        let sha = sha_output.lines().next().unwrap_or(&sha_output).to_string();
+        let name = root.file_name().map_or_else(
+            || "unknown".to_string(),
+            |n| n.to_string_lossy().to_string(),
+        );
+        Ok(Self { root, sha, name })
+    }
+}
+
 /// Run a git command and return stdout on success.
 ///
 /// # Errors

@@ -18,18 +18,16 @@ const HOOK_CONTENT: &str = "\n# Record commit activity\ngit-recap update\n";
 /// Returns an error if the hook is already installed or if any file/git
 /// operation fails.
 pub fn run() -> Result<()> {
-    let sha = git::initial_commit_sha()?;
-    let root = git::repo_root()?;
-    let name = git::repo_name()?;
+    let ctx = git::RepoContext::resolve()?;
 
     // Install hook
     install_hook()?;
 
     // Register in registry
-    registry::register(&sha, &root)?;
+    registry::register(&ctx.sha, &ctx.root)?;
 
     // Lazy-init report
-    let mut report = Report::load_or_init(root, name, sha)?;
+    let mut report = Report::load_or_init(ctx.root, ctx.name, ctx.sha)?;
     report.activity.last_touched = chrono::Local::now().fixed_offset();
     report.save()?;
 

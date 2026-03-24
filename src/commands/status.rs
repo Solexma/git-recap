@@ -10,8 +10,8 @@ use crate::report::Report;
 ///
 /// Returns an error if not in a git repo or no report exists.
 pub fn run() -> Result<()> {
-    let sha = git::initial_commit_sha()?;
-    let report = Report::load(&sha)?;
+    let ctx = git::RepoContext::resolve()?;
+    let report = Report::load(&ctx.sha)?;
 
     let branch = report
         .activity

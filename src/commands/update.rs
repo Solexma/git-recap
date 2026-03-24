@@ -11,15 +11,13 @@ use crate::report::{DayStats, LastCommit, Report};
 ///
 /// Returns an error if git operations or file I/O fails.
 pub fn run() -> Result<()> {
-    let sha = git::initial_commit_sha()?;
-    let root = git::repo_root()?;
-    let name = git::repo_name()?;
+    let ctx = git::RepoContext::resolve()?;
 
-    if !registry::is_registered(&sha)? {
-        registry::register(&sha, &root)?;
+    if !registry::is_registered(&ctx.sha)? {
+        registry::register(&ctx.sha, &ctx.root)?;
     }
 
-    let mut report = Report::load_or_init(root, name, sha)?;
+    let mut report = Report::load_or_init(ctx.root, ctx.name, ctx.sha)?;
 
     let now: DateTime<FixedOffset> = Local::now().fixed_offset();
     report.activity.last_touched = now;

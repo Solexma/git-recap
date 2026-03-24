@@ -13,10 +13,10 @@ use crate::registry;
 ///
 /// Returns an error if the hook is not installed or file operations fail.
 pub fn run() -> Result<()> {
-    let sha = git::initial_commit_sha()?;
+    let ctx = git::RepoContext::resolve()?;
 
     uninstall_hook()?;
-    registry::deregister(&sha)?;
+    registry::deregister(&ctx.sha)?;
 
     println!("{} hook removed, repo deregistered", "Done.".green().bold());
 

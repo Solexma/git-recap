@@ -26,12 +26,12 @@ pub fn run() -> Result<()> {
     println!("  MIT License - Solexma LLC");
     println!();
 
-    if let Ok(sha) = git::initial_commit_sha() {
+    if let Ok(ctx) = git::RepoContext::resolve() {
         println!("{}", "Current project:".cyan());
-        println!("  Root SHA: {sha}");
-        println!("  Report: {}", config::report_file(&sha).display());
+        println!("  Root SHA: {}", ctx.sha);
+        println!("  Report: {}", config::report_file(&ctx.sha).display());
 
-        match Report::load(&sha) {
+        match Report::load(&ctx.sha) {
             Ok(_) => println!("  Tracked: {}", "yes".green()),
             Err(_) => println!("  Tracked: {}", "no".yellow()),
         }

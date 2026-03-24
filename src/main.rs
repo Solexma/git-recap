@@ -34,9 +34,8 @@ enum Commands {
     /// Show info about git-recap and current project
     Info,
 
-    /// Update report (called by post-commit hook, not user-facing)
-    #[command(hide = true)]
-    Update,
+    /// Recap the latest commit into the activity report
+    This,
 }
 
 fn main() -> ExitCode {
@@ -48,7 +47,7 @@ fn main() -> ExitCode {
         Commands::Touch => commands::touch::run(),
         Commands::Status => commands::status::run(),
         Commands::Info => commands::info::run(),
-        Commands::Update => commands::update::run(),
+        Commands::This => commands::this::run(),
     };
 
     match result {

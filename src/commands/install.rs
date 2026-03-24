@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 use crate::git;
 use crate::registry;
 use crate::report::Report;
-const HOOK_CONTENT: &str = "\n# Record commit activity\ngit-recap update\n";
+const HOOK_CONTENT: &str = "\n# Record commit activity\ngit-recap this\n";
 
 /// Install the post-commit hook, register the repo, and initialise the report.
 ///

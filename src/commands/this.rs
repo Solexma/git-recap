@@ -1,141 +1,92 @@
-use chrono::{DateTime, FixedOffset, Local, NaiveDate};
+use chrono::{DateTime, FixedOffset, Local};
 use colored::Colorize;
 
 use crate::error::Result;
 use crate::git;
-use crate::registry;
-use crate::report::{DayStats, LastCommit, Report};
+use crate::registry::Registry;
+use crate::report::{Commit, Report};
 
-/// Record the latest commit's activity into the report (post-commit hook entry point).
+/// Recap the latest commits into the activity report.
 ///
 /// # Errors
 ///
 /// Returns an error if git operations or file I/O fails.
-pub fn run() -> Result<()> {
+pub fn run(count: Option<u32>, default: bool) -> Result<()> {
     let ctx = git::RepoContext::resolve()?;
+    let mut registry = Registry::load()?;
 
-    if !registry::is_registered(&ctx.sha)? {
-        registry::register(&ctx.sha, &ctx.root)?;
+    // Ensure registered
+    if !registry.is_registered(&ctx.sha) {
+        registry.register(&ctx.sha, &ctx.root);
+    }
+
+    // Handle --default flag
+    if default {
+        registry.clear_count(&ctx.sha);
+        registry.save()?;
+    }
+
+    // Handle --count flag (persist for future use)
+    if let Some(n) = count {
+        registry.set_count(&ctx.sha, n);
+        registry.save()?;
+    }
+
+    let effective_count = count.unwrap_or_else(|| registry.count_for(&ctx.sha));
+
+    // Save registry if we just registered
+    if !default && count.is_none() {
+        // Only save if we modified it (registration)
+        registry.save()?;
     }
 
     let mut report = Report::load_or_init(ctx.root, ctx.name, ctx.sha)?;
+    report.activity.last_touched = Local::now().fixed_offset();
 
-    let now: DateTime<FixedOffset> = Local::now().fixed_offset();
-    report.activity.last_touched = now;
-
-    // Get HEAD SHA to check for duplicates
-    let head_sha = git::run(&["rev-parse", "HEAD"])?;
-
-    // Skip if already recapped this commit
-    if report
-        .activity
-        .last_commit
-        .as_ref()
-        .is_some_and(|c| c.sha == head_sha)
-    {
-        report.save()?;
-        println!("{} already recapped", "Done.".green().bold());
-        return Ok(());
-    }
-
-    // Get commit info
-    let date_str = git::run(&["log", "-1", "--format=%aI"])?;
-    let message = git::run(&["log", "-1", "--format=%s"])?;
-    let branch = git::run(&["rev-parse", "--abbrev-ref", "HEAD"])?;
-    let author = git::run(&["log", "-1", "--format=%aN"])?;
-
-    let commit_date: DateTime<FixedOffset> = date_str.parse().unwrap_or(now);
-
-    report.activity.last_commit = Some(LastCommit {
-        sha: head_sha,
-        date: commit_date,
-        message,
-        branch,
-        author,
-    });
-
-    // Get diff stats
-    let (files_changed, insertions, deletions) = parse_diff_stats();
-
-    // Update today stats
-    let today = now.date_naive();
-    report.activity.today = Some(accumulate_today(
-        report.activity.today,
-        today,
-        commit_date,
-        files_changed,
-        insertions,
-        deletions,
-    ));
+    // Fetch last N commits
+    let commits = fetch_commits(effective_count)?;
+    report.activity.commits = commits;
 
     report.save()?;
 
-    println!(
-        "{} {} — {}",
-        "Done.".green().bold(),
-        report
-            .activity
-            .last_commit
-            .as_ref()
-            .map_or("(no commit)", |c| c.message.as_str()),
-        format!("{files_changed} files, +{insertions} -{deletions}").dimmed()
-    );
+    let n = report.activity.commits.len();
+    if n == 0 {
+        println!("{} no commits to recap", "Done.".green().bold());
+    } else {
+        let first = &report.activity.commits[0];
+        println!(
+            "{} {n} commits recapped — latest: {}",
+            "Done.".green().bold(),
+            first.message
+        );
+    }
 
     Ok(())
 }
 
-fn parse_diff_stats() -> (u32, u32, u32) {
-    let output = git::run(&["show", "--stat", "--format=", "HEAD"]).unwrap_or_default();
+fn fetch_commits(count: u32) -> Result<Vec<Commit>> {
+    // Format: sha<SEP>date<SEP>subject<SEP>author
+    let separator = "\x1f"; // ASCII unit separator
+    let format = format!("%H{separator}%aI{separator}%s{separator}%aN");
+    let output = git::run(&["log", &format!("-{count}"), &format!("--format={format}")])?;
 
-    let Some(summary_line) = output.lines().last() else {
-        return (0, 0, 0);
-    };
+    let branch = git::run(&["rev-parse", "--abbrev-ref", "HEAD"])?;
+    let now: DateTime<FixedOffset> = Local::now().fixed_offset();
 
-    let mut files = 0u32;
-    let mut ins = 0u32;
-    let mut del = 0u32;
-
-    for part in summary_line.split(',') {
-        let part = part.trim();
-        if let Some(n) = part.split_whitespace().next().and_then(|s| s.parse().ok()) {
-            if part.contains("file") {
-                files = n;
-            } else if part.contains("insertion") {
-                ins = n;
-            } else if part.contains("deletion") {
-                del = n;
-            }
+    let mut commits = Vec::new();
+    for line in output.lines() {
+        let parts: Vec<&str> = line.splitn(4, '\x1f').collect();
+        if parts.len() == 4 {
+            let date: DateTime<FixedOffset> = parts[1].parse().unwrap_or(now);
+            commits.push(Commit {
+                sha: parts[0].to_string(),
+                date,
+                message: parts[2].to_string(),
+                branch: branch.clone(),
+                author: parts[3].to_string(),
+            });
         }
     }
 
-    (files, ins, del)
-}
-
-fn accumulate_today(
-    existing: Option<DayStats>,
-    today: NaiveDate,
-    commit_date: DateTime<FixedOffset>,
-    files_changed: u32,
-    insertions: u32,
-    deletions: u32,
-) -> DayStats {
-    match existing {
-        Some(mut stats) if stats.date == today => {
-            stats.commits += 1;
-            stats.last = commit_date;
-            stats.files_changed += files_changed;
-            stats.insertions += insertions;
-            stats.deletions += deletions;
-            stats
-        }
-        _ => DayStats {
-            date: today,
-            commits: 1,
-            first: commit_date,
-            last: commit_date,
-            files_changed,
-            insertions,
-            deletions,
-        },
-    }
+    Ok(commits)
 }

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use chrono::{DateTime, FixedOffset, Local, NaiveDate};
+use chrono::{DateTime, FixedOffset, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::config;
@@ -22,29 +22,18 @@ pub struct Repo {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Activity {
-    pub last_commit: Option<LastCommit>,
     pub last_touched: DateTime<FixedOffset>,
-    pub today: Option<DayStats>,
+    #[serde(default)]
+    pub commits: Vec<Commit>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LastCommit {
+pub struct Commit {
     pub sha: String,
     pub date: DateTime<FixedOffset>,
     pub message: String,
     pub branch: String,
     pub author: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DayStats {
-    pub date: NaiveDate,
-    pub commits: u32,
-    pub first: DateTime<FixedOffset>,
-    pub last: DateTime<FixedOffset>,
-    pub files_changed: u32,
-    pub insertions: u32,
-    pub deletions: u32,
 }
 
 impl Report {
@@ -55,9 +44,8 @@ impl Report {
         Self {
             repo: Repo { path, name, sha },
             activity: Activity {
-                last_commit: None,
                 last_touched: now,
-                today: None,
+                commits: Vec::new(),
             },
         }
     }

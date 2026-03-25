@@ -2,10 +2,10 @@ use colored::Colorize;
 
 use crate::error::Result;
 use crate::git;
-use crate::registry;
+use crate::registry::Registry;
 use crate::report::Report;
 
-/// Touch the report to update the last-touched timestamp.
+/// Manual "I'm here" ping.
 ///
 /// # Errors
 ///
@@ -13,8 +13,10 @@ use crate::report::Report;
 pub fn run() -> Result<()> {
     let ctx = git::RepoContext::resolve()?;
 
-    if !registry::is_registered(&ctx.sha)? {
-        registry::register(&ctx.sha, &ctx.root)?;
+    let mut registry = Registry::load()?;
+    if !registry.is_registered(&ctx.sha) {
+        registry.register(&ctx.sha, &ctx.root);
+        registry.save()?;
     }
 
     let mut report = Report::load_or_init(ctx.root, ctx.name, ctx.sha)?;

@@ -34,8 +34,16 @@ enum Commands {
     /// Show info about git-recap and current project
     Info,
 
-    /// Recap the latest commit into the activity report
-    This,
+    /// Recap the latest commits into the activity report
+    This {
+        /// Number of commits to recap (saves as default for this repo)
+        #[arg(long)]
+        count: Option<u32>,
+
+        /// Clear per-repo count, fall back to global default
+        #[arg(long)]
+        default: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -47,7 +55,7 @@ fn main() -> ExitCode {
         Commands::Touch => commands::touch::run(),
         Commands::Status => commands::status::run(),
         Commands::Info => commands::info::run(),
-        Commands::This => commands::this::run(),
+        Commands::This { count, default } => commands::this::run(count, default),
     };
 
     match result {

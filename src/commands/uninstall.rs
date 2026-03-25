@@ -5,18 +5,21 @@ use colored::Colorize;
 use super::{HOOK_MARKER_END, HOOK_MARKER_START};
 use crate::error::{Error, Result};
 use crate::git;
-use crate::registry;
+use crate::registry::Registry;
 
-/// Remove the post-commit hook and deregister the repo.
+/// Remove hook and deregister repo.
 ///
 /// # Errors
 ///
-/// Returns an error if the hook is not installed or file operations fail.
+/// Returns an error if hook removal or file I/O fails.
 pub fn run() -> Result<()> {
     let ctx = git::RepoContext::resolve()?;
 
     uninstall_hook()?;
-    registry::deregister(&ctx.sha)?;
+
+    let mut registry = Registry::load()?;
+    registry.deregister(&ctx.sha);
+    registry.save()?;
 
     println!("{} hook removed, repo deregistered", "Done.".green().bold());
 

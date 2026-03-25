@@ -7,26 +7,25 @@ use colored::Colorize;
 use super::{HOOK_MARKER_END, HOOK_MARKER_START};
 use crate::error::{Error, Result};
 use crate::git;
-use crate::registry;
+use crate::registry::Registry;
 use crate::report::Report;
+
 const HOOK_CONTENT: &str = "\n# Record commit activity\ngit-recap this\n";
 
-/// Install the post-commit hook, register the repo, and initialise the report.
+/// Install post-commit hook and register repo.
 ///
 /// # Errors
 ///
-/// Returns an error if the hook is already installed or if any file/git
-/// operation fails.
+/// Returns an error if hook installation or file I/O fails.
 pub fn run() -> Result<()> {
     let ctx = git::RepoContext::resolve()?;
 
-    // Install hook
     install_hook()?;
 
-    // Register in registry
-    registry::register(&ctx.sha, &ctx.root)?;
+    let mut registry = Registry::load()?;
+    registry.register(&ctx.sha, &ctx.root);
+    registry.save()?;
 
-    // Lazy-init report
     let mut report = Report::load_or_init(ctx.root, ctx.name, ctx.sha)?;
     report.activity.last_touched = chrono::Local::now().fixed_offset();
     report.save()?;

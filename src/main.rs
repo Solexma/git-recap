@@ -19,11 +19,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Install post-commit hook and register repo
-    Install,
-
-    /// Remove hook and deregister repo
-    Uninstall,
+    /// Manage git hooks
+    Hook {
+        #[command(subcommand)]
+        action: HookAction,
+    },
 
     /// Manual "I'm here" ping (lazy init, no commit needed)
     Touch,
@@ -72,12 +72,31 @@ enum DigestFilter {
     },
 }
 
+#[derive(Subcommand)]
+enum HookAction {
+    /// Install git hook to run recap on commits
+    Install {
+        /// Hook to install (default: post-commit)
+        #[arg(long, default_value = "post-commit")]
+        on: String,
+    },
+
+    /// Remove git hook
+    Uninstall {
+        /// Hook to remove (default: post-commit)
+        #[arg(long, default_value = "post-commit")]
+        on: String,
+    },
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::Install => commands::install::run(),
-        Commands::Uninstall => commands::uninstall::run(),
+        Commands::Hook { action } => match action {
+            HookAction::Install { on } => commands::hook::install(&on),
+            HookAction::Uninstall { on } => commands::hook::uninstall(&on),
+        },
         Commands::Touch => commands::touch::run(),
         Commands::Status => commands::status::run(),
         Commands::Info => commands::info::run(),

@@ -34,15 +34,10 @@ enum Commands {
     /// Show info about git-recap and current project
     Info,
 
-    /// Compact summary of all registered repos
+    /// Compact summary of registered repos
     Digest {
-        /// Filter repos with activity since date (yesterday, today, or YYYY-MM-DD)
-        #[arg(long)]
-        since: Option<String>,
-
-        /// Output as JSON for scripts/Claude
-        #[arg(long)]
-        json: bool,
+        #[command(subcommand)]
+        filter: DigestFilter,
     },
 
     /// Recap the latest commits into the activity report
@@ -57,6 +52,26 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand)]
+enum DigestFilter {
+    /// Show all registered repos
+    All {
+        /// Output as JSON for scripts/Claude
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Filter repos with activity since a period
+    Since {
+        /// Period: yesterday, today, last-week, last-month, Nd (e.g. 7d), or YYYY-MM-DD
+        value: String,
+
+        /// Output as JSON for scripts/Claude
+        #[arg(long)]
+        json: bool,
+    },
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
@@ -66,7 +81,10 @@ fn main() -> ExitCode {
         Commands::Touch => commands::touch::run(),
         Commands::Status => commands::status::run(),
         Commands::Info => commands::info::run(),
-        Commands::Digest { ref since, json } => commands::digest::run(since.as_ref(), json),
+        Commands::Digest { filter } => match filter {
+            DigestFilter::All { json } => commands::digest::run(None, json),
+            DigestFilter::Since { value, json } => commands::digest::run(Some(&value), json),
+        },
         Commands::This { count, default } => commands::this::run(count, default),
     };
 

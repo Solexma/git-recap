@@ -160,6 +160,19 @@ fn parse_since(s: &str) -> Option<NaiveDate> {
     match s {
         "yesterday" => Some(today - chrono::Duration::days(1)),
         "today" => Some(today),
-        _ => NaiveDate::parse_from_str(s, "%Y-%m-%d").ok(),
+        "last-week" => Some(today - chrono::Duration::days(7)),
+        "last-month" => Some(today - chrono::Duration::days(30)),
+        _ => {
+            // Try Nd format (e.g. "7d", "28d")
+            if let Some(days_str) = s.strip_suffix('d') {
+                if let Ok(days) = days_str.parse::<i64>() {
+                    return Some(today - chrono::Duration::days(days));
+                }
+            }
+            // Try YYYYMMDD format
+            NaiveDate::parse_from_str(s, "%Y%m%d")
+                .or_else(|_| NaiveDate::parse_from_str(s, "%Y-%m-%d"))
+                .ok()
+        }
     }
 }

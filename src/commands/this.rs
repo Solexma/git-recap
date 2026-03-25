@@ -23,6 +23,21 @@ pub fn run() -> Result<()> {
     let now: DateTime<FixedOffset> = Local::now().fixed_offset();
     report.activity.last_touched = now;
 
+    // Get HEAD SHA to check for duplicates
+    let head_sha = git::run(&["rev-parse", "HEAD"])?;
+
+    // Skip if already recapped this commit
+    if report
+        .activity
+        .last_commit
+        .as_ref()
+        .is_some_and(|c| c.sha == head_sha)
+    {
+        report.save()?;
+        println!("{} already recapped", "Done.".green().bold());
+        return Ok(());
+    }
+
     // Get commit info
     let date_str = git::run(&["log", "-1", "--format=%aI"])?;
     let message = git::run(&["log", "-1", "--format=%s"])?;
@@ -32,6 +47,7 @@ pub fn run() -> Result<()> {
     let commit_date: DateTime<FixedOffset> = date_str.parse().unwrap_or(now);
 
     report.activity.last_commit = Some(LastCommit {
+        sha: head_sha,
         date: commit_date,
         message,
         branch,

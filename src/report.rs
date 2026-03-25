@@ -29,6 +29,7 @@ pub struct Activity {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LastCommit {
+    pub sha: String,
     pub date: DateTime<FixedOffset>,
     pub message: String,
     pub branch: String,

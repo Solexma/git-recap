@@ -57,12 +57,12 @@ pub fn run() -> Result<()> {
     println!(
         "{} {} — {}",
         "Done.".green().bold(),
-        report.activity.last_commit.as_ref().map_or("(no commit)", |c| c.message.as_str()),
-        format!(
-            "{} files, +{} -{}",
-            files_changed, insertions, deletions
-        )
-        .dimmed()
+        report
+            .activity
+            .last_commit
+            .as_ref()
+            .map_or("(no commit)", |c| c.message.as_str()),
+        format!("{files_changed} files, +{insertions} -{deletions}").dimmed()
     );
 
     Ok(())

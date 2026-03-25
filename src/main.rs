@@ -34,6 +34,17 @@ enum Commands {
     /// Show info about git-recap and current project
     Info,
 
+    /// Compact summary of all registered repos
+    Digest {
+        /// Filter repos with activity since date (yesterday, today, or YYYY-MM-DD)
+        #[arg(long)]
+        since: Option<String>,
+
+        /// Output as JSON for scripts/Claude
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Recap the latest commits into the activity report
     This {
         /// Number of commits to recap (saves as default for this repo)
@@ -55,6 +66,7 @@ fn main() -> ExitCode {
         Commands::Touch => commands::touch::run(),
         Commands::Status => commands::status::run(),
         Commands::Info => commands::info::run(),
+        Commands::Digest { ref since, json } => commands::digest::run(since.as_ref(), json),
         Commands::This { count, default } => commands::this::run(count, default),
     };
 

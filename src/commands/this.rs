@@ -1,4 +1,5 @@
 use chrono::{DateTime, FixedOffset, Local, NaiveDate};
+use colored::Colorize;
 
 use crate::error::Result;
 use crate::git;
@@ -52,6 +53,17 @@ pub fn run() -> Result<()> {
     ));
 
     report.save()?;
+
+    println!(
+        "{} {} — {}",
+        "Done.".green().bold(),
+        report.activity.last_commit.as_ref().map_or("(no commit)", |c| c.message.as_str()),
+        format!(
+            "{} files, +{} -{}",
+            files_changed, insertions, deletions
+        )
+        .dimmed()
+    );
 
     Ok(())
 }
